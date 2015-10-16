@@ -1,40 +1,41 @@
 import os
 import binascii
 
-#sign_list = ["ff d8", "ff d9", "4d 5a", "89 50 4e 47 0d 0a 1a 0a", "25 50 44 46", "ff fb", "49 44 33", "49 49 2a 00", "4d 4d 00 2a"]
 listFoundHeader=[]
 listFoundFooter=[]
 listIssue=[]
 listFile=[]
-sig_list = [("ff d8", "ff d9"),("ff d1","ff d3")]
+sig_list = [("ff d8", "ff d9"),("89 50 4e 47","49 45 4e 44")] # This list stores tuple values of headers/footers
 
-file_list = [f for f in os.listdir(".") if os.path.isfile(f)]
+file_list = [f for f in os.listdir(".") if os.path.isfile(f)] # creates a list of every file in the current directory
 os.system("clear;")
 print "|File List:"
 for file in file_list:
-                print "|   "+file
+                print "|   "+file # this for loop prints out every file in the current directory
 print "\nNow Scanning..."
-for f in file_list:
 
-        opened_file = open(f, "rb")
-        unspaced_hex_data = binascii.hexlify(opened_file.read())
-        hex_data = " ".join([unspaced_hex_data[i:i+2] for i in range(0, len(unspaced_hex_data), 2)])
 
-        for sig in sig_list:
+for f in file_list: # for every file
 
-                if sig[0] in hex_data[0:6]:
-                        print " [+] {} | FF D8 Header Found".format(f)
+        opened_file = open(f, "rb") # open the file in read binary mode
+        unspaced_hex_data = binascii.hexlify(opened_file.read()) # convert the binary into hexadecimal data.
+        hex_data = " ".join([unspaced_hex_data[i:i+2] for i in range(0, len(unspaced_hex_data), 2)]) # add a space between every second character of the hex
+
+        for sig in sig_list: # for every tuple pair of signatures
+
+                if sig[0] in hex_data[0:11]: # if the first index of the tuple (the header) is found in the first 11 characters of hex
+                        print " [+] {} | {} Header Found".format(f, sig[0]) # alert the user to the found header.
                         listFile.append(f)
-                        listFoundHeader.append("FF D8")
-                        last_index = len(hex_data)
+                        listFoundHeader.append(sig[0])
+                        last_index = len(hex_data) # last_index is a variable used to find the end of a file
 
-                        if sig[1] in hex_data[last_index - 5: last_index]:
-                                print " [-] {} | FF D9 Footer Found".format(f)
-                                listFoundFooter.append("FF D9")
+                        if sig[1] in hex_data[last_index - 11: last_index]: # if the footer is in the last 11 characters of the hex
+                                print " [-] {} | {} Footer Found".format(f, sig[1]) # alert the user to the found footer.
+                                listFoundFooter.append(sig[1])
                                 print "\n"
                         else:
-                                print " [!] {} | Potential Appended Data".format(f)+"|"+str([hex_data[last_index - 5: last_index]])
-                                listIssue.append("Issue Found | "+str([hex_data[last_index - 5: last_index]]))
+                                print " [!] Potential Appended Data" # if footer is not found, it may indicate potential appended data in the file.
+                                listIssue.append("Issue Found | "+str([hex_data[last_index - 11: last_index]]))
                                 print "\n"
 
 print "[+] {} File(s) found.".format(str(file_list.__len__()))
